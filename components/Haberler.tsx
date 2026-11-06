@@ -20,15 +20,17 @@ export default function Haberler() {
                 data-gorun
                 style={{ ["--gecikme" as string]: `${i * 0.08}s` }}
               >
-                <div className="relative aspect-[3/2] overflow-hidden bg-krem-2">
-                  <Image
-                    src={h.gorsel}
-                    alt={h.alt}
-                    fill
-                    sizes="(min-width: 1024px) 30vw, (min-width: 640px) 40vw, 100vw"
-                    quality={80}
-                    className="object-cover transition-transform duration-[1.4s] ease-[var(--ease-yumusak)] hover:scale-[1.03]"
-                  />
+                <div className={`relative aspect-[3/2] ${h.kesit ? "" : "overflow-hidden bg-krem-2"}`} data-acil={h.kesit ? undefined : ""}>
+                  <div className="absolute inset-0" data-acil-ic>
+                    <Image
+                      src={h.gorsel}
+                      alt={h.alt}
+                      fill
+                      sizes="(min-width: 1024px) 30vw, (min-width: 640px) 40vw, 100vw"
+                      quality={80}
+                      className={h.kesit ? "object-contain" : "object-cover"}
+                    />
+                  </div>
                 </div>
                 <div>
                   {h.tarih && <p className="ust-etiket ikincil">{h.tarih}</p>}

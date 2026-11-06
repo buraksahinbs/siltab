@@ -28,7 +28,8 @@ const cihazlar = {
 };
 
 const cihaz = arg("cihaz", "masaustu");
-const url = arg("url", "http://localhost:3500/");
+// ekran görüntüsü tarayıcısı GPU'suz (yazılım WebGL) çalışır; sahneyi görmek için zorlanır
+const url = arg("url", "http://localhost:3500/?sahne=zorla");
 const cikis = arg("cikis", "docs/_kontrol/ekran");
 const bekle = Number(arg("bekle", "1600"));
 const azHareket = process.argv.includes("--az-hareket");

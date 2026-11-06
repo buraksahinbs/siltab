@@ -131,13 +131,15 @@ export const haberler = {
       tarih: "Kasım 2024",
       gorsel: "/mevcut/pierre-cardin-vip-lansman.webp",
       alt: "Pierre Cardin VIP Exclusive lansman afişi",
+      kesit: false,
     },
     {
       baslik: "Yeni sezon Pierre Cardin şıklığı showroom'da",
       metin: "Pierre Cardin erkek ayakkabılarının yeni sezon modelleri showroom'da.",
       tarih: null,
-      gorsel: "/mevcut/pierre-cardin-bot.webp",
+      gorsel: "/mevcut/pierre-cardin-bot-alfa.webp",
       alt: "Pierre Cardin erkek botları",
+      kesit: true,
     },
   ],
 };

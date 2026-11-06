@@ -1,7 +1,9 @@
-"use client";
-
 import { altBilgi, bayiGirisi, firma, gezinme, tamirTakip } from "@/content/site";
-import { pencereAc, Wordmark } from "./Ust";
+import PencereDugmesi from "./PencereDugmesi";
+import Wordmark from "./Wordmark";
+
+// Derleme yılı: statik sayfa her yayında yeniden üretilir.
+const YIL = new Date().getFullYear();
 
 export default function Alt() {
   return (
@@ -23,14 +25,14 @@ export default function Alt() {
                 </li>
               ))}
               <li>
-                <button type="button" className="baglanti" onClick={() => pencereAc("tamir")}>
+                <PencereDugmesi pencere="tamir" className="baglanti">
                   {tamirTakip.baslik}
-                </button>
+                </PencereDugmesi>
               </li>
               <li>
-                <button type="button" className="baglanti" onClick={() => pencereAc("bayi")}>
+                <PencereDugmesi pencere="bayi" className="baglanti">
                   {bayiGirisi.baslik}
-                </button>
+                </PencereDugmesi>
               </li>
             </ul>
           </nav>
@@ -46,7 +48,7 @@ export default function Alt() {
         </div>
         <div className="mt-16 flex flex-col gap-3 text-xs ikincil sm:flex-row sm:justify-between">
           <p>
-            © {new Date().getFullYear()} {altBilgi.telif}
+            © {YIL} {altBilgi.telif}
           </p>
           <p>{altBilgi.temsili}</p>
         </div>

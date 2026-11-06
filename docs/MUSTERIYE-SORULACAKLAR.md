@@ -7,7 +7,7 @@ Geliştirme sırasında sormadan makul bir varsayımla ilerlediğimiz konular. H
 1. **Ürünlerin markası.** Katalog görsellerinin hangi markaya ait olduğu bilinmiyor. Bazı çantaların üzerinde "KUUM" yazısı görünüyor, ama bunu varsayım olarak kullanmadık. Sitede ürünler yalnızca kategoriye bağlı (Babet, Bot, Çanta, Comfort, Deri, Okçeli, Spor), markaya bağlanmadı. Hangi ürün hangi markaya ait?
 2. **Koleksiyon görsellerinin kamuya açık yayını.** Mevcut sitede koleksiyon sayfaları bayi girişi arkasında. Yeni sitede seçilmiş 21 ürünün görselleri herkese açık gösteriliyor. Bu görsellerin açık yayınına izin var mı?
 3. **Fiyat gizliliği.** Katalog görsellerinde ürün kodu ve fiyat etiketi yazılıydı. Tüm etiketler görsellerden silindi, sitede fiyat ve ürün kodu yok. Bayi fiyatlarının hiçbir biçimde yayınlanmaması varsayıldı. Doğru mu?
-4. **Aynı sayfadaki görseller.** Katalogda aynı sayfadaki görseller çoğunlukla aynı modelin farklı renkleri (farklı açılar değil). Sahnede bu renkler arasında geçiş yapılıyor. Her ürün için çok açılı (ön, yan, arka) fotoğraf varsa sahne bunlarla daha iyi çalışır. Böyle fotoğraflar var mı?
+4. **Aynı sayfadaki görseller.** Katalogda aynı sayfadaki görseller çoğunlukla aynı modelin farklı renkleri (farklı açılar değil). Sahnede bu renkler arasında geçiş yapılıyor. Her ürün için çok açılı (ön, yan, arka) fotoğraf varsa sahne bunlarla daha iyi çalışır. Böyle fotoğraflar var mı? Ayrıca katalog fotoğrafları beyaz zeminde; sahne için zemin otomatik ayrıldı (bir model, parlak yansımaları zemin sandığı için elendi). Şeffaf ya da düz renkli zeminde çekilmiş kaynak dosyalar kaliteyi artırır.
 5. **Ürün seçimi.** Landing için kategori başına 3 ürün seçildi (toplam 21). Öne çıkarılmasını istediğiniz özel modeller var mı?
 
 ## Kurumsal bilgiler

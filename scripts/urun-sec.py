@@ -27,6 +27,8 @@ from PIL import Image
 KOK = Path(__file__).resolve().parent.parent
 URUN = KOK / "public" / "urun"
 TS = KOK / "content" / "urunler.ts"
+ALFA = KOK / "public" / "urun-alfa"
+OLCU = KOK / "docs" / "_kontrol" / "alfa-olcu.json"
 
 # (kategori, kaynak klasör, sayfa, görsel sıraları)
 SECIM = [
@@ -47,7 +49,7 @@ SECIM = [
     ("deri", "deri", 14, [1, 2, 3]),
     ("okceli", "okceli", 3, [1, 2]),
     ("okceli", "okceli", 9, [1, 2, 3]),
-    ("okceli", "okceli", 21, [1, 2]),
+    # okceli-s21 elendi: ikinci görselde taban altında açık renkli yansıma lekesi kalıyor
     ("spor", "spor", 1, [1, 2]),
     ("spor", "spor", 4, [1, 2, 3]),
     ("spor", "spor", 7, [1, 2, 3]),
@@ -76,6 +78,7 @@ def main() -> int:
     ap.add_argument("--budama", action="store_true")
     args = ap.parse_args()
 
+    olcu = json.loads(OLCU.read_text()) if OLCU.exists() else {}
     urunler = []
     gerekli: set[Path] = set()
     for kategori, klasor, sayfa, siralar in SECIM:
@@ -95,6 +98,11 @@ def main() -> int:
                     "buyuk": f"/urun/{klasor}/{ad}.webp",
                     "kucuk": f"/urun/{klasor}/{ad}-{KUCUK}.webp",
                     "renk": baskin_renk(buyuk),
+                    # saydam kesit (scripts/urun-alfa.py): ürün kare içinde alt kenara oturur
+                    "alfa": f"/urun-alfa/{klasor}/{ad}.webp",
+                    "alfaKucuk": f"/urun-alfa/{klasor}/{ad}-512.webp",
+                    "genislik": olcu.get(ad, {}).get("genislik", 0.9),
+                    "yukseklik": olcu.get(ad, {}).get("yukseklik", 0.9),
                 }
             )
         urunler.append({"id": f"{klasor}-s{sayfa:02d}", "kategori": kategori, "gorseller": gorseller})
@@ -112,7 +120,7 @@ def main() -> int:
         "",
         'export type KategoriKimligi = "babet" | "bot" | "canta" | "comfort" | "deri" | "okceli" | "spor";',
         "",
-        "export type UrunGorseli = { buyuk: string; kucuk: string; /** baskın ürün rengi (renk noktası) */ renk: string };",
+        "export type UrunGorseli = {\n  buyuk: string;\n  kucuk: string;\n  /** baskın ürün rengi (renk noktası) */\n  renk: string;\n  /** saydam kesit 1024 px ve 512 px (ürün kare içinde alt kenara oturur) */\n  alfa: string;\n  alfaKucuk: string;\n  /** ürünün karedeki genişlik ve yükseklik payı (gölge boyutu için) */\n  genislik: number;\n  yukseklik: number;\n};",
         "",
         "export type Urun = { id: string; kategori: KategoriKimligi; gorseller: UrunGorseli[] };",
         "",

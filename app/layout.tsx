@@ -3,17 +3,29 @@ import { Cormorant_Garamond, Inter } from "next/font/google";
 import { firma } from "@/content/site";
 import "./globals.css";
 
+// Yazı tipleri: yalnızca kullanılan kesimler. Önceden yüklenen yalnızca latin alt kümesi;
+// Türkçe harfler (ş, ğ, İ) latin-ext dosyasından gerektiğinde gelir. Bu, ilk boyamadan önce
+// indirilen baytı yaklaşık 275 KB'tan 120 KB'a indirir.
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
-  subsets: ["latin", "latin-ext"],
-  weight: ["300", "400", "500"],
-  style: ["normal", "italic"],
+  subsets: ["latin"],
+  weight: ["300", "400"],
   display: "swap",
+});
+
+const cormorantItalik = Cormorant_Garamond({
+  variable: "--font-cormorant-italik",
+  subsets: ["latin"],
+  weight: ["300"],
+  style: ["italic"],
+  display: "swap",
+  preload: false,
 });
 
 const inter = Inter({
   variable: "--font-inter",
-  subsets: ["latin", "latin-ext"],
+  subsets: ["latin"],
+  weight: ["400", "500"],
   display: "swap",
 });
 
@@ -58,7 +70,7 @@ const kurulus = {
   "@type": "Organization",
   name: firma.ad,
   url: firma.siteUrl,
-  logo: `${firma.siteUrl}/og.jpg`,
+  logo: `${firma.siteUrl}/logo.png`,
   foundingDate: "2001",
   email: firma.eposta,
   telephone: firma.telefon,
@@ -75,7 +87,7 @@ const kurulus = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="tr" data-tema="koyu" className={`${cormorant.variable} ${inter.variable}`} suppressHydrationWarning>
+    <html lang="tr" data-tema="koyu" className={`${cormorant.variable} ${cormorantItalik.variable} ${inter.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: onBetik }} />
       </head>

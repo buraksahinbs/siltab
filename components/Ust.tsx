@@ -8,20 +8,12 @@ import { bayiGirisi, firma, gezinme, tamirTakip } from "@/content/site";
 import { BayiGirisFormu, TamirTakipFormu } from "./Formlar";
 import { useKaydirma } from "./Kaydirma";
 import Modal from "./Modal";
+import Wordmark from "./Wordmark";
 
 type Pencere = null | "tamir" | "bayi";
 
 export function pencereAc(p: Exclude<Pencere, null>) {
   window.dispatchEvent(new CustomEvent("pencere-ac", { detail: p }));
-}
-
-export function Wordmark({ className = "" }: { className?: string }) {
-  return (
-    <span className={`inline-flex items-baseline gap-2.5 leading-none ${className}`}>
-      <span className="serif text-[1.65rem] font-medium tracking-[0.14em]">SİLTAB</span>
-      <span className="text-[0.5625rem] font-medium tracking-[0.34em] opacity-70">GROUP</span>
-    </span>
-  );
 }
 
 export default function Ust() {
@@ -107,8 +99,9 @@ export default function Ust() {
         }}
       >
         <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-[var(--kenar)] lg:h-[4.75rem]">
-          <a href="#acilis" aria-label={`${firma.ad}, sayfa başı`} className="relative z-10">
+          <a href="#acilis" className="relative z-10">
             <Wordmark />
+            <span className="ekran-okuyucu">, sayfa başı</span>
           </a>
 
           <nav aria-label="Ana menü" className="hidden lg:block">

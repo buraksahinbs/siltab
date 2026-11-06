@@ -1,32 +1,35 @@
 "use client";
 
-// Açılış: koyu stüdyo sahnesi. Kaydırma ilerlemesi sahneyi ve metinleri birlikte sürer.
-// WebGL yoksa ya da azaltılmış hareket istenmişse düz görsel gösterilir.
-// Ağır sahne (three.js) yalnızca gerektiğinde ve sonradan yüklenir: masaüstünde tarayıcı
-// boşta kalınca, dokunmatik cihazlarda ilk etkileşimde.
+// Açılış: koyu stüdyo sahnesi, kaydırmayla ekrana sabitlenir (sticky). Kaydırma ilerlemesi
+// sahneyi ve metinleri birlikte sürer: ürün zeminde döner, renk yüzleri değişir, ürünler
+// sırayla gelir, kamera süzülür, başlık değişir.
+// Temel katman CSS 3B sahnesidir (her ortamda çalışır). Donanım hızlandırmalı WebGL varsa
+// three.js katmanı sonradan yüklenip üstüne gelir: masaüstünde tarayıcı boşta kalınca,
+// dokunmatik cihazlarda ilk etkileşimde. Azaltılmış harekette sahne sabit durur.
 
 import dynamic from "next/dynamic";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { acilis, kategoriAdlari } from "@/content/site";
 import type { Urun } from "@/content/urunler";
-import { useAzHareket, useMedya, useWebgl } from "@/lib/ortam";
+import { izle, yapiskanAralik } from "@/lib/izle";
+import { useAzHareket, useMedya, webglVar } from "@/lib/ortam";
 import { cozumle, sahneDurumu } from "@/lib/sahne";
+import CssSahne from "./sahne/CssSahne";
 
 const UrunSahnesi = dynamic(() => import("./sahne/UrunSahnesi"), { ssr: false });
 
-type Mod = "poster" | "3b" | "duz";
+type Mod = "css" | "3b" | "duz";
 
 export default function Acilis({ urunler }: { urunler: Urun[] }) {
   const bolumRef = useRef<HTMLElement>(null);
   const azHareket = useAzHareket();
-  const webgl = useWebgl();
   const buyukEkran = useMedya("(min-width: 1024px)", true);
   const [yukle, setYukle] = useState(false);
   const [hazir, setHazir] = useState(false);
-  const duz = azHareket || !webgl;
-  const mod: Mod = duz ? "duz" : hazir ? "3b" : "poster";
+  // WebGL denetimi (GL bağlamı açar) hidrasyonda değil, sahne yüklenmeden hemen önce yapılır.
+  // Donanım hızlandırması yoksa CSS sahnesi kalır (sayfa düzeni değişmez).
+  const duz = azHareket;
+  const mod: Mod = duz ? "duz" : hazir ? "3b" : "css";
   const [aktif, setAktif] = useState(true);
   const [asama, setAsama] = useState(-1);
   const [renk, setRenk] = useState(0);
@@ -36,7 +39,8 @@ export default function Acilis({ urunler }: { urunler: Urun[] }) {
     () =>
       urunler.map((u) => ({
         id: u.id,
-        dokular: u.gorseller.map((g) => (buyukEkran ? g.buyuk : g.kucuk)),
+        dokular: u.gorseller.map((g) => (buyukEkran ? g.alfa : g.alfaKucuk)),
+        genislikler: u.gorseller.map((g) => g.genislik),
       })),
     [urunler, buyukEkran],
   );
@@ -44,13 +48,14 @@ export default function Acilis({ urunler }: { urunler: Urun[] }) {
   // ---------------- mod seçimi ve gecikmeli yükleme
   useEffect(() => {
     if (duz) return;
-    const dokunmatik = window.matchMedia("(pointer: coarse)").matches;
+    // dokunmatik ya da dar ekran: sahne yalnızca ilk etkileşimde yüklenir (mobil işlemciyi ilk açılışta yorma)
+    const dokunmatik = window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 1024;
     let bitti = false;
     const basla = () => {
       if (bitti) return;
       bitti = true;
-      setYukle(true);
       kaldir();
+      if (webglVar()) setYukle(true);
     };
     const olaylar = ["pointerdown", "touchstart", "wheel", "keydown", "scroll"] as const;
     const kaldir = () => olaylar.forEach((o) => window.removeEventListener(o, basla));
@@ -71,21 +76,22 @@ export default function Acilis({ urunler }: { urunler: Urun[] }) {
   // ---------------- kaydırma → sahne durumu
   useEffect(() => {
     const bolum = bolumRef.current;
-    if (!bolum || mod === "duz") return;
-    const tetik = ScrollTrigger.create({
-      trigger: bolum,
-      start: "top top",
-      end: "bottom bottom",
-      onUpdate: (self) => {
-        sahneDurumu.hedef = self.progress;
-      },
+    if (!bolum || duz) return;
+    const birak = izle(bolum, yapiskanAralik, (p) => {
+      sahneDurumu.hedef = p;
     });
-    sahneDurumu.hedef = tetik.progress;
 
     let sonAsama = -2;
     let sonRenk = -1;
-    const tik = (_t: number, dtMs: number) => {
-      const dt = Math.min(0.1, dtMs / 1000);
+    let gorunur = true;
+    let onceki = performance.now();
+    let kare = 0;
+    const tik = (simdi: number) => {
+      kare = requestAnimationFrame(tik);
+      // yavaş cihazda da sahne kaydırmanın gerisinde kalmasın: kare süresi 0,25 sn ile sınırlı
+      const dt = Math.min(0.25, (simdi - onceki) / 1000);
+      onceki = simdi;
+      if (!gorunur) return;
       const s = sahneDurumu;
       // ikinci sönüm katmanı: kaydırma dursa da sahne bir an süzülerek oturur
       s.deger += (s.hedef - s.deger) * (1 - Math.exp(-dt * 4.2));
@@ -99,11 +105,17 @@ export default function Acilis({ urunler }: { urunler: Urun[] }) {
         sonRenk = c.renk;
         setRenk(c.renk);
       }
-      bolum.style.setProperty("--giris", c.giris.toFixed(4));
-    };
-    gsap.ticker.add(tik);
 
-    const gozlemci = new IntersectionObserver(([g]) => setAktif(g.isIntersecting), { threshold: 0 });
+    };
+    kare = requestAnimationFrame(tik);
+
+    const gozlemci = new IntersectionObserver(
+      ([g]) => {
+        gorunur = g.isIntersecting;
+        setAktif(g.isIntersecting);
+      },
+      { threshold: 0 },
+    );
     gozlemci.observe(bolum);
 
     const imlec = (e: PointerEvent) => {
@@ -114,12 +126,12 @@ export default function Acilis({ urunler }: { urunler: Urun[] }) {
     window.addEventListener("pointermove", imlec, { passive: true });
 
     return () => {
-      tetik.kill();
-      gsap.ticker.remove(tik);
+      birak();
+      cancelAnimationFrame(kare);
       gozlemci.disconnect();
       window.removeEventListener("pointermove", imlec);
     };
-  }, [mod, renkSayilari]);
+  }, [duz, renkSayilari]);
 
   const urun = asama >= 0 ? urunler[asama] : null;
   const toplam = urunler.length;
@@ -129,8 +141,6 @@ export default function Acilis({ urunler }: { urunler: Urun[] }) {
     if (!urun) return;
     window.dispatchEvent(new CustomEvent("koleksiyon-kategori", { detail: urun.kategori }));
   };
-
-  const ilk = urunler[0].gorseller[0];
 
   return (
     <section
@@ -142,27 +152,12 @@ export default function Acilis({ urunler }: { urunler: Urun[] }) {
       style={{ ["--asama-sayisi" as string]: toplam }}
     >
       <div className="sticky top-0 h-svh overflow-hidden bg-koyu">
-        {/* düz görsel: poster ve yedek */}
+        {/* temel katman: CSS 3B sahnesi */}
         <div
-          aria-hidden={mod !== "duz"}
-          className="acilis-poster pointer-events-none absolute inset-0 transition-opacity duration-[1200ms] ease-[var(--ease-sakin)]"
+          className="absolute inset-0 transition-opacity duration-[1200ms] ease-[var(--ease-sakin)]"
           style={{ opacity: hazir ? 0 : 1 }}
         >
-          <div className="acilis-poster-isik absolute inset-0" />
-          <div className="acilis-poster-kart absolute">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={ilk.kucuk}
-              srcSet={`${ilk.kucuk} 768w, ${ilk.buyuk} 1200w`}
-              sizes="(min-width: 1024px) 40vw, 70vw"
-              alt={`${kategoriAdlari[urunler[0].kategori]} kategorisinden bir model`}
-              width={1200}
-              height={1200}
-              fetchPriority="high"
-              decoding="async"
-              className="h-full w-full object-cover"
-            />
-          </div>
+          <CssSahne urunler={urunler} calis={!hazir && aktif} />
         </div>
 
         {yukle && mod !== "duz" && (

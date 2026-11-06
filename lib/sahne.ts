@@ -78,3 +78,35 @@ export function cozumle(p: number, renkSayilari: number[]): Cozum {
     yerel: t,
   };
 }
+
+export type Yerlesim = {
+  /** ürün karesinin kenarı (px) */
+  kutu: number;
+  /** odaktaki ürünün yatay merkezi (px, soldan) */
+  merkezX: number;
+  /** zemin çizgisi: ürünün bastığı yer (px, üstten) */
+  zeminY: number;
+  /** kameranın kayması (px) ve yaklaşma oranı (1 = olağan) */
+  kameraX: number;
+  kameraY: number;
+  yaklasma: number;
+  yatay: boolean;
+};
+
+/**
+ * Açılış sahnesinin ekran yerleşimi. CSS sahnesi ve WebGL katmanı aynı hesabı kullanır;
+ * sunucu tarafındaki ilk CSS (globals.css, .sahne-*) bu formüllerin p=0 halidir.
+ * Yatay ekranda ürün sağda (metin solda), dikey ekranda üst yarıda.
+ */
+export function sahneYerlesimi(w: number, h: number, p = sahneDurumu.deger): Yerlesim {
+  const yatay = w / Math.max(1, h) > 1.05;
+  const kutu = yatay ? Math.min(h * 0.66, w * 0.44) : Math.min(w * 0.82, h * 0.42);
+  const merkezX = yatay ? w * 0.7 : w * 0.5;
+  const zeminY = yatay ? h * 0.78 : h * 0.1 + kutu;
+  // kamera: açılışta biraz uzakta, kaydırdıkça yaklaşır; aşamalar boyunca hafif yörünge
+  const giris = Math.min(1, p / 0.12);
+  const yaklasma = 0.9 + 0.1 * yumusak(giris) + Math.sin(p * Math.PI) * 0.05;
+  const kameraX = Math.sin(p * Math.PI * 2) * kutu * 0.08;
+  const kameraY = (1 - yumusak(giris)) * kutu * 0.06;
+  return { kutu, merkezX, zeminY, kameraX, kameraY, yaklasma, yatay };
+}

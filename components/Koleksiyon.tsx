@@ -5,17 +5,16 @@
 // döner (kavisli bir raf gibi). Fareyle kartın üstünde gezinince kart eğilir, dokunmatikte
 // dokunuşla. Azaltılmış harekette şerit yerel yatay kaydırmaya döner.
 
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Fragment, useCallback, useEffect, useRef, useState, type PointerEvent as RPointerEvent } from "react";
 import { kategoriAdlari, kategoriSirasi, koleksiyon } from "@/content/site";
 import type { KategoriKimligi, Urun } from "@/content/urunler";
+import { izle, yapiskanAralik, yenile } from "@/lib/izle";
 import { useAzHareket } from "@/lib/ortam";
 import { useKaydirma } from "./Kaydirma";
 
 const iki = (n: number) => String(n).padStart(2, "0");
 
-function UrunKarti({ urun, sira }: { urun: Urun; sira: number }) {
+function UrunKarti({ urun, sira, yakin }: { urun: Urun; sira: number; yakin: boolean }) {
   const [renk, setRenk] = useState(0);
   const kartRef = useRef<HTMLDivElement>(null);
   const ad = kategoriAdlari[urun.kategori];
@@ -28,8 +27,6 @@ function UrunKarti({ urun, sira }: { urun: Urun; sira: number }) {
     const y = (e.clientY - r.top) / r.height - 0.5;
     el.style.setProperty("--ex", (-y * 7).toFixed(2));
     el.style.setProperty("--ey", (x * 9).toFixed(2));
-    el.style.setProperty("--ix", `${(x * 100 + 50).toFixed(1)}%`);
-    el.style.setProperty("--iy", `${(y * 100 + 50).toFixed(1)}%`);
   };
   const birak = () => {
     const el = kartRef.current;
@@ -49,25 +46,26 @@ function UrunKarti({ urun, sira }: { urun: Urun; sira: number }) {
         onPointerUp={(e) => e.pointerType !== "mouse" && birak()}
         onPointerCancel={birak}
       >
-        <div className="kart-gorsel relative aspect-square overflow-hidden bg-white">
-          {urun.gorseller.map((g, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={g.buyuk}
-              src={g.kucuk}
-              srcSet={`${g.kucuk} 768w, ${g.buyuk} 1200w`}
-              sizes="(min-width: 1024px) 26vw, 70vw"
-              alt={i === renk ? `${ad} modeli, ${i + 1}. renk seçeneği` : ""}
-              aria-hidden={i !== renk}
-              width={1200}
-              height={1200}
-              loading="lazy"
-              decoding="async"
-              className="kart-resim absolute inset-0 h-full w-full object-cover"
-              style={{ opacity: i === renk ? 1 : 0 }}
-            />
-          ))}
-          <span className="kart-isik" aria-hidden="true" />
+        {/* ürün saydam kesit olarak zeminde durur; çevresinde kart ya da zemin yok */}
+        <div className="kart-gorsel relative aspect-square" role="img" aria-label={`${ad} modeli, ${renk + 1}. renk seçeneği`}>
+          <span className="kart-golge" aria-hidden="true" style={{ ["--gen" as string]: urun.gorseller[renk].genislik }} />
+          {yakin &&
+            urun.gorseller.map((g, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={g.alfa}
+                src={g.alfaKucuk}
+                srcSet={`${g.alfaKucuk} 512w, ${g.alfa} 1024w`}
+                sizes="(min-width: 1024px) 28vw, 76vw"
+                alt=""
+                width={1024}
+                height={1024}
+                decoding="async"
+                draggable={false}
+                className="kart-resim absolute inset-0 h-full w-full object-contain"
+                style={{ opacity: i === renk ? 1 : 0 }}
+              />
+            ))}
         </div>
         <div className="mt-5 flex items-center justify-between gap-4">
           <p className="ust-etiket">
@@ -112,6 +110,24 @@ export default function Koleksiyon({ urunler }: { urunler: Urun[] }) {
   const [yukseklik, setYukseklik] = useState<number | null>(null);
   const [aktif, setAktif] = useState<KategoriKimligi>(kategoriSirasi[0]);
   const tasma = useRef(0);
+  // görseller bölüm yaklaşınca (yaklaşık iki ekran önce) hep birlikte yüklenir:
+  // yatay kayan şeritte tarayıcının tembel yüklemesi geç kalıp boş kart bırakmasın
+  const [yakin, setYakin] = useState(false);
+  useEffect(() => {
+    const el = pistRef.current;
+    if (!el) return;
+    const g = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          setYakin(true);
+          g.disconnect();
+        }
+      },
+      { rootMargin: "200% 0px" },
+    );
+    g.observe(el);
+    return () => g.disconnect();
+  }, []);
   const kaydirma = useKaydirma();
 
   const gruplar = kategoriSirasi
@@ -138,7 +154,7 @@ export default function Koleksiyon({ urunler }: { urunler: Urun[] }) {
   }, [yapiskan]);
 
   useEffect(() => {
-    if (yukseklik != null) ScrollTrigger.refresh();
+    if (yukseklik != null) yenile();
   }, [yukseklik]);
 
   // kaydırma → yatay konum, kart eğimi, etkin kategori
@@ -146,40 +162,67 @@ export default function Koleksiyon({ urunler }: { urunler: Urun[] }) {
     if (!yapiskan || yukseklik == null) return;
     const pist = pistRef.current!;
     const iz = izRef.current!;
-    const xAyarla = gsap.quickSetter(iz, "x", "px");
+    const xAyarla = (x: number) => {
+      iz.style.transform = `translate3d(${x.toFixed(1)}px,0,0)`;
+    };
     const kartlar = Array.from(iz.querySelectorAll<HTMLElement>(".kart-yuva, .grup-baslik"));
-    const basliklar = Array.from(iz.querySelectorAll<HTMLElement>(".grup-baslik"));
+    // her kategorinin çapası: başlık görünüyorsa başlık, mobilde (başlık gizli) ilk kart
+    const capaBul = () =>
+      Array.from(iz.querySelectorAll<HTMLElement>(".grup-baslik")).map((b) =>
+        b.offsetWidth > 0 ? b : (iz.querySelector<HTMLElement>(`.kart-yuva[data-kategori="${b.dataset.kategori}"]`) ?? b),
+      );
+    let basliklar = capaBul();
     let sonAktif = "";
+    // ölçüler yalnızca yenilemede okunur; kaydırma sırasında düzen okunmaz (zorunlu yeniden akış yok)
+    let merkezler: number[] = [];
+    let baslikSollari: number[] = [];
+    let vw = window.innerWidth;
+    const olc = () => {
+      vw = window.innerWidth;
+      merkezler = kartlar.map((el) => el.offsetLeft + el.offsetWidth / 2);
+      basliklar = capaBul();
+      baslikSollari = basliklar.map((b) => b.offsetLeft);
+    };
+    olc();
 
     const guncelle = (p: number) => {
       const x = -p * tasma.current;
       xAyarla(x);
       if (cizgiRef.current) cizgiRef.current.style.transform = `scaleX(${p})`;
-      const vw = window.innerWidth;
-      for (const el of kartlar) {
-        const merkez = el.offsetLeft + x + el.offsetWidth / 2;
-        const r = Math.max(-1.6, Math.min(1.6, (merkez - vw / 2) / (vw / 2)));
-        el.style.setProperty("--egim", (-r * 9).toFixed(2));
-        el.style.setProperty("--derin", (-Math.abs(r) * 50).toFixed(1));
+      for (let i = 0; i < kartlar.length; i++) {
+        const r = Math.max(-1.6, Math.min(1.6, (merkezler[i] + x - vw / 2) / (vw / 2)));
+        kartlar[i].style.setProperty("--egim", (-r * 9).toFixed(2));
+        kartlar[i].style.setProperty("--derin", (-Math.abs(r) * 50).toFixed(1));
       }
       // ekranın sol üçte birini geçen son grup etkin
       let etkin = basliklar[0]?.dataset.kategori ?? "";
-      for (const b of basliklar) if (b.offsetLeft + x < vw * 0.4) etkin = b.dataset.kategori!;
+      for (let i = 0; i < basliklar.length; i++) if (baslikSollari[i] + x < vw * 0.4) etkin = basliklar[i].dataset.kategori!;
       if (etkin !== sonAktif) {
         sonAktif = etkin;
         setAktif(etkin as KategoriKimligi);
       }
     };
 
-    const tetik = ScrollTrigger.create({
-      trigger: pist,
-      start: "top top",
-      end: "bottom bottom",
-      onUpdate: (self) => guncelle(self.progress),
-      onRefresh: (self) => guncelle(self.progress),
-    });
-    guncelle(tetik.progress);
-    return () => tetik.kill();
+    // şerit ekrana girerken kartların kademeli yükselişi
+    kartlar.forEach((el, i) => el.style.setProperty("--kademe", String(Math.min(i, 5))));
+    const girisBirak = izle(
+      pist,
+      (o) => [o.ust - o.vh * 0.95, o.ust - o.vh * 0.05],
+      (p) => iz.style.setProperty("--giris", (1 - Math.pow(1 - p, 3)).toFixed(4)),
+    );
+    // aralık her yenilemede yeniden hesaplanır: o sırada kart ölçülerini de tazele
+    const birak = izle(
+      pist,
+      (o) => {
+        olc();
+        return yapiskanAralik(o);
+      },
+      guncelle,
+    );
+    return () => {
+      birak();
+      girisBirak();
+    };
   }, [yapiskan, yukseklik]);
 
   const kategoriyeGit = useCallback(
@@ -187,7 +230,9 @@ export default function Koleksiyon({ urunler }: { urunler: Urun[] }) {
       const iz = izRef.current;
       const pist = pistRef.current;
       if (!iz || !pist) return;
-      const baslik = iz.querySelector<HTMLElement>(`.grup-baslik[data-kategori="${k}"]`);
+      const gb = iz.querySelector<HTMLElement>(`.grup-baslik[data-kategori="${k}"]`);
+      const baslik =
+        gb && gb.offsetWidth > 0 ? gb : iz.querySelector<HTMLElement>(`.kart-yuva[data-kategori="${k}"]`);
       if (!baslik) return;
       const solPay = parseFloat(getComputedStyle(iz).paddingLeft) || 0;
       const hedef = Math.max(0, baslik.offsetLeft - solPay);
@@ -288,7 +333,7 @@ export default function Koleksiyon({ urunler }: { urunler: Urun[] }) {
                   </div>
                 </li>
                 {g.urunler.map((u) => (
-                  <UrunKarti key={u.id} urun={u} sira={++sira} />
+                  <UrunKarti key={u.id} urun={u} sira={++sira} yakin={yakin} />
                 ))}
               </Fragment>
             ))}

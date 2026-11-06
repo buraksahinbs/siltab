@@ -24,8 +24,9 @@ function Cerceve({
   sizes: string;
 }) {
   return (
-    <div className="relative overflow-hidden bg-koyu-2" style={{ aspectRatio: oran }}>
+    <div className="relative overflow-hidden bg-koyu-2" style={{ aspectRatio: oran }} data-acil>
       <div className="absolute inset-x-0 -top-[10%] h-[120%]" data-paralaks="0.07">
+        <div className="h-full w-full" data-acil-ic>
         <Image
           src={src}
           alt={alt}
@@ -36,6 +37,7 @@ function Cerceve({
           className="h-full w-full object-cover"
           style={{ objectPosition: konum }}
         />
+        </div>
       </div>
     </div>
   );
@@ -107,17 +109,6 @@ export default function Markalar() {
                   alt="Pierre Cardin kampanya fotoğrafı: siyah smokinli erkek, İstanbul vapuru önünde"
                   sizes="(min-width: 1024px) 50vw, 100vw"
                 />
-                <div className="absolute -bottom-10 -left-6 hidden w-[34%] border-[10px] border-koyu bg-white lg:block xl:-left-14">
-                  <Image
-                    src="/mevcut/pierre-cardin-rugan.webp"
-                    alt="Pierre Cardin siyah rugan erkek ayakkabı"
-                    width={614}
-                    height={568}
-                    sizes="18vw"
-                    quality={80}
-                    className="h-auto w-full"
-                  />
-                </div>
               </div>
             }
           >
