@@ -21,6 +21,7 @@ import argparse
 import json
 from pathlib import Path
 
+import numpy as np
 from PIL import Image
 
 KOK = Path(__file__).resolve().parent.parent
@@ -55,6 +56,21 @@ SECIM = [
 KUCUK = 768
 
 
+def baskin_renk(yol: Path) -> str:
+    """Ürün piksellerinin (beyaz zemin dışı) medyan rengi: renk seçeneği noktası için."""
+    with Image.open(yol) as im:
+        a = np.asarray(im.convert("RGB").resize((300, 300), Image.BILINEAR)).reshape(-1, 3).astype(int)
+    urun = a[a.min(axis=1) < 225]
+    if len(urun) == 0:
+        return "#cccccc"
+    # gölgeleri ve parlak yansımaları at: algılanan malzeme rengi parlaklığın üst-orta bandında
+    parlak = urun.mean(axis=1)
+    alt, ust = np.percentile(parlak, [50, 90])
+    orta = urun[(parlak >= alt) & (parlak <= ust)]
+    r, g, b = np.median(orta if len(orta) else urun, axis=0).astype(int)
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--budama", action="store_true")
@@ -75,7 +91,11 @@ def main() -> int:
                     im.resize((KUCUK, KUCUK), Image.LANCZOS).save(kucuk, "WEBP", quality=80, method=5)
             gerekli.update({buyuk, kucuk})
             gorseller.append(
-                {"buyuk": f"/urun/{klasor}/{ad}.webp", "kucuk": f"/urun/{klasor}/{ad}-{KUCUK}.webp"}
+                {
+                    "buyuk": f"/urun/{klasor}/{ad}.webp",
+                    "kucuk": f"/urun/{klasor}/{ad}-{KUCUK}.webp",
+                    "renk": baskin_renk(buyuk),
+                }
             )
         urunler.append({"id": f"{klasor}-s{sayfa:02d}", "kategori": kategori, "gorseller": gorseller})
 
@@ -92,7 +112,7 @@ def main() -> int:
         "",
         'export type KategoriKimligi = "babet" | "bot" | "canta" | "comfort" | "deri" | "okceli" | "spor";',
         "",
-        "export type UrunGorseli = { buyuk: string; kucuk: string };",
+        "export type UrunGorseli = { buyuk: string; kucuk: string; /** baskın ürün rengi (renk noktası) */ renk: string };",
         "",
         "export type Urun = { id: string; kategori: KategoriKimligi; gorseller: UrunGorseli[] };",
         "",

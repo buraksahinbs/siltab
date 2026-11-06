@@ -87,3 +87,9 @@ Kurumsal, profesyonel, ciddi. Rengarenk veya "yapay zeka sloplu" görünüm yasa
 ## Ürün seçimi kararı (Burak'ın son talebi, bağlayıcı)
 
 Tek sayfa landing için 661 görselin hepsi gerekmiyor. Temizleme ve kontrol işini DURDUR. Elinde temizlenmiş olanlardan, kategori başına en fazla 3 ürün (toplam 20 ile 24 ürün, ürün başına 2 ile 3 açı) en iyi ve en temiz olanları seç. Sadece bunları kullan, kalanı yok say, daha fazla zaman harcama. Seçimi `content/urunler.ts` dosyasına yaz. Hemen Aşama 2'ye (3 boyutlu ana sahne ve landing bölümleri) geç. Zamanın büyük kısmı sahneye, hareket kalitesine ve bölüm tasarımına gitsin.
+
+## Chief kontrol notları (ilk ekran görüntüsü, bağlayıcı)
+
+1. Sahnede ürünler bej zeminli kare kartlar olarak duruyor, koyu zeminle sert kontrast yapıyor ve "yapıştırılmış fotoğraf" gibi görünüyor. Mümkünse alfa kesitli ürünü (public/urun-alfa) doğrudan koyu sahnede, yumuşak zemin yansıması ve gölgesiyle kullan. Kesit kötü çıkan ürünü ele.
+2. Sayfa ilk yüklendiğinde ürünler görünmüyor (boş podyum). Doku yüklenene kadar yer tutucu ve yumuşak geçiş (fade) ekle, sahne içeriği hazır olmadan gösterilmesin.
+3. Mobil (390) ve masaüstü (1440) ekran görüntüleri `docs/ekran/` altında olsun, bütün bölümler için.
