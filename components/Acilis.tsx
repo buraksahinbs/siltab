@@ -225,6 +225,7 @@ export default function Acilis({ urunler }: { urunler: Urun[] }) {
                     {iki(toplam)}
                   </p>
                   <h2 className="baslik-1 mt-4">{kategoriAdlari[urun.kategori]}</h2>
+                  {urun.gorseller.length > 1 && (
                   <div className="mt-6 flex items-center gap-5">
                     <ul className="flex items-center gap-2.5" aria-label="Renk seçenekleri">
                       {urun.gorseller.map((g, i) => (
@@ -246,6 +247,8 @@ export default function Acilis({ urunler }: { urunler: Urun[] }) {
                     </ul>
                     <span className="ust-etiket ikincil">{urun.gorseller.length} renk</span>
                   </div>
+                  )}
+                  {urun.kategori !== "erkek-klasik" && (
                   <button
                     type="button"
                     onClick={kategoriyeGit}
@@ -254,11 +257,38 @@ export default function Acilis({ urunler }: { urunler: Urun[] }) {
                     {kategoriAdlari[urun.kategori]} modellerini görün
                     <span aria-hidden="true">→</span>
                   </button>
+                  )}
                 </div>
               )}
             </div>
           )}
 
+          {/* sağdaki kategori göstergesi (masaüstü) */}
+          {mod !== "duz" && (
+            <ol
+              aria-hidden="true"
+              className="absolute right-[var(--kenar)] bottom-[clamp(2rem,6vh,4.5rem)] hidden flex-col items-end gap-2.5 lg:flex"
+              style={{ opacity: asama >= 0 ? 1 : 0, transition: "opacity .8s var(--ease-yumusak)" }}
+            >
+              {urunler.map((u, i) => (
+                <li key={u.id} className="flex items-center gap-3">
+                  <span
+                    className="ust-etiket transition-[opacity,color] duration-700"
+                    style={{ opacity: i === asama ? 1 : 0.38, color: i === asama ? "var(--color-krem)" : undefined }}
+                  >
+                    {kategoriAdlari[u.kategori]}
+                  </span>
+                  <span
+                    className="block h-px transition-[width,background-color] duration-700"
+                    style={{
+                      width: i === asama ? 28 : 10,
+                      background: i === asama ? "var(--color-taba)" : "rgba(246,242,236,.3)",
+                    }}
+                  />
+                </li>
+              ))}
+            </ol>
+          )}
         </div>
       </div>
     </section>

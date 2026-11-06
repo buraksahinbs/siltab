@@ -57,6 +57,27 @@ SECIM = [
 
 KUCUK = 768
 
+# Katalog dışı, yalnızca açılış sahnesinde kullanılan ürünler (BRIEF, Ürün sırası kararı).
+# Erkek rugan: mevcut siteden (Pierre Cardin) alınmış, saydam kesiti hazır verildi;
+# yan açı tek görsel, kare ve tabana oturan sürümleri bu klasörde (-kare, -kare-768, -kare-512).
+EK_URUNLER = [
+    {
+        "id": "erkek-rugan",
+        "kategori": "erkek-klasik",
+        "gorseller": [
+            {
+                "buyuk": "/urun-alfa/erkek-rugan/erkek-rugan-kare.webp",
+                "kucuk": "/urun-alfa/erkek-rugan/erkek-rugan-kare-768.webp",
+                "renk": "#39393d",
+                "alfa": "/urun-alfa/erkek-rugan/erkek-rugan-kare.webp",
+                "alfaKucuk": "/urun-alfa/erkek-rugan/erkek-rugan-kare-512.webp",
+                "genislik": 0.9004,
+                "yukseklik": 0.3535,
+            }
+        ],
+    }
+]
+
 
 def baskin_renk(yol: Path) -> str:
     """Ürün piksellerinin (beyaz zemin dışı) medyan rengi: renk seçeneği noktası için."""
@@ -118,13 +139,20 @@ def main() -> int:
         "// Görseller etiket ve fiyat metninden temizlenmiştir. Ürün adı, marka ve fiyat bilgisi yoktur.",
         "// Aynı ürünün görselleri katalogdaki renk seçenekleridir.",
         "",
-        'export type KategoriKimligi = "babet" | "bot" | "canta" | "comfort" | "deri" | "okceli" | "spor";',
+        'export type KategoriKimligi =',
+        '  | "babet" | "bot" | "canta" | "comfort" | "deri" | "okceli" | "spor"',
+        '  /** yalnızca açılış sahnesi (katalog dışı) */',
+        '  | "erkek-klasik";',
         "",
         "export type UrunGorseli = {\n  buyuk: string;\n  kucuk: string;\n  /** baskın ürün rengi (renk noktası) */\n  renk: string;\n  /** saydam kesit 1024 px ve 512 px (ürün kare içinde alt kenara oturur) */\n  alfa: string;\n  alfaKucuk: string;\n  /** ürünün karedeki genişlik ve yükseklik payı (gölge boyutu için) */\n  genislik: number;\n  yukseklik: number;\n};",
         "",
         "export type Urun = { id: string; kategori: KategoriKimligi; gorseller: UrunGorseli[] };",
         "",
+        "/** Katalogdan seçilen ürünler (koleksiyon şeridi ve açılış). */",
         "export const urunler: Urun[] = " + json.dumps(urunler, ensure_ascii=False, indent=2) + ";",
+        "",
+        "/** Katalog dışı, yalnızca açılış sahnesinde kullanılan ürünler. */",
+        "export const ekUrunler: Urun[] = " + json.dumps(EK_URUNLER, ensure_ascii=False, indent=2) + ";",
         "",
     ]
     TS.parent.mkdir(parents=True, exist_ok=True)

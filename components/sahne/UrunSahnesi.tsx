@@ -58,18 +58,20 @@ const urunFragment = /* glsl */ `
   uniform float uOpaklik;
   uniform float uYansima;
   uniform float uParilti;
+  uniform float uTexel;
+  uniform float uParlama;
   varying vec2 vUv;
   varying vec3 vDunya;
   varying vec3 vNormal;
 
+  vec4 oku(vec2 uv) {
+    if (gl_FrontFacing) return mix(texture2D(uOn, uv), texture2D(uOn2, uv), uKarisim);
+    return texture2D(uArka, uv);
+  }
+
   void main() {
     vec2 uv = vUv;
-    vec4 t;
-    if (gl_FrontFacing) {
-      t = mix(texture2D(uOn, uv), texture2D(uOn2, uv), uKarisim);
-    } else {
-      t = texture2D(uArka, uv);
-    }
+    vec4 t = oku(uv);
     if (t.a < 0.004) discard;
 
     vec3 V = normalize(cameraPosition - vDunya);
@@ -80,9 +82,17 @@ const urunFragment = /* glsl */ `
     float yukseklik = uYansima > 0.5 ? 1.0 - uv.y : uv.y;
     c *= mix(0.8, 1.06, smoothstep(0.0, 0.9, yukseklik));
     c *= vec3(1.025, 1.0, 0.965);
-    float bant = exp(-pow((uv.x * 0.9 + uv.y * 0.35 - uParilti) * 4.0, 2.0));
-    c += bant * 0.05 * t.a;
-    c *= uParlaklik;
+    // kaydırmayla gezen yansıma bandı (rugan parlaklığında belirgin)
+    float bant = exp(-pow((uv.x * 0.9 + uv.y * 0.35 - uParilti) * 4.5, 2.0));
+    c += bant * 0.09 * t.a * vec3(1.0, 0.96, 0.9);
+    // kenar ışığı: üstü saydam olan kenarlarda ince sıcak ışık (siyah ürün koyu zeminde kaybolmasın)
+    if (uYansima < 0.5) {
+      float ust = oku(uv + vec2(0.0, uTexel * 2.5)).a;
+      float yan = max(oku(uv + vec2(uTexel * 2.0, uTexel)).a, 0.0);
+      float kenar = clamp(t.a - min(ust, yan), 0.0, 1.0);
+      c += vec3(1.0, 0.92, 0.82) * kenar * 0.32;
+    }
+    c *= uParlaklik * (1.0 + uParlama * 0.16);
 
     float a = t.a * uOpaklik * gorunum;
     if (uYansima > 0.5) {
@@ -122,7 +132,26 @@ const zeminFragment = /* glsl */ `
   uniform vec2 uMerkez;
   uniform float uZemin;
   uniform float uGuc;
+  uniform vec2 uKaynak1;
+  uniform vec2 uKaynak2;
+  uniform vec2 uHedef;
+  uniform float uNefes1;
+  uniform float uNefes2;
+  uniform float uParlama;
   varying vec2 vUv;
+
+  // yumuşak konik huzme: kaynaktan hedefe, açısal olarak sönen ve zemine doğru zayıflayan
+  float huzme(vec2 p, vec2 k, vec2 h, float yariAci, float en) {
+    vec2 v = (p - k) * vec2(en, 1.0);
+    vec2 eksen = normalize((h - k) * vec2(en, 1.0));
+    float uz = length(v);
+    float aci = acos(clamp(dot(v / max(uz, 1e-4), eksen), -1.0, 1.0));
+    // kenarsız: açı merkezden itibaren yumuşakça söner
+    float koni = pow(1.0 - smoothstep(0.0, yariAci, aci), 1.6);
+    float boy = length((h - k) * vec2(en, 1.0));
+    float sonum = smoothstep(0.0, 0.35 * boy, uz) * (1.0 - smoothstep(boy * 1.05, boy * 1.35, uz));
+    return koni * sonum;
+  }
 
   float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 
@@ -132,22 +161,26 @@ const zeminFragment = /* glsl */ `
     vec3 taban = vec3(0.0046, 0.0078, 0.0062);
     vec3 isik = vec3(0.92, 0.85, 0.74);
 
-    float dx = abs(p.x - uMerkez.x) * en;
-    float d = clamp((1.05 - p.y) / max(0.05, 1.05 - uZemin), 0.0, 1.0);
-    float gen = 0.05 + d * 0.38;
-    float koni = pow(clamp(1.0 - dx / gen, 0.0, 1.0), 1.6) * (0.35 + 0.65 * d);
+    float koni = huzme(p, uKaynak1, uHedef, 0.17, en) * uNefes1
+               + huzme(p, uKaynak2, uHedef, 0.12, en) * uNefes2 * 0.7;
     koni *= step(uZemin, p.y);
+    // ürün arkasında çok hafif sıcak hale
+    vec2 hd = vec2((p.x - uHedef.x) * en / 0.22, (p.y - uHedef.y) / 0.16);
+    float hale = exp(-dot(hd, hd));
 
     float zemin = 1.0 - smoothstep(uZemin - 0.002, uZemin + 0.004, p.y);
     float zeminTon = zemin * (0.55 + 0.45 * smoothstep(0.0, uZemin, p.y));
-    vec2 h = vec2((p.x - uMerkez.x) * en / 0.75, (p.y - uZemin) / 0.11);
+    vec2 h = vec2((p.x - uMerkez.x) * en / 0.55, (p.y - uZemin) / 0.09);
     float havuz = exp(-dot(h, h) * 1.4) * zemin;
 
     vec2 v = (p - 0.5) * vec2(en, 1.0);
     float kenar = smoothstep(1.3, 0.2, length(v));
 
     vec3 c = taban * mix(0.55, 1.0, kenar);
-    c += isik * (koni * 0.03 + havuz * 0.075 + zeminTon * 0.006) * uGuc;
+    vec3 sicak = vec3(0.84, 0.66, 0.46);
+    float parla = 1.0 + uParlama * 0.6;
+    c += isik * (koni * 0.028 * parla + havuz * 0.055 * uNefes1 * parla + zeminTon * 0.004) * uGuc;
+    c += sicak * hale * 0.02 * uGuc * parla;
     c += (hash(gl_FragCoord.xy) - 0.5) / 255.0;
     gl_FragColor = vec4(c, 1.0);
     #include <colorspace_fragment>
@@ -236,6 +269,8 @@ function urunUret(renkSayisi: number, bos: THREE.Texture, geo: THREE.PlaneGeomet
         uParlaklik: { value: 1 },
         uOpaklik: { value: 0 },
         uYansima: { value: yansima ? 1 : 0 },
+        uTexel: { value: 1 / 1024 },
+        uParlama: { value: 0 },
       },
     });
   const mat = matUret(false);
@@ -299,6 +334,12 @@ function Sahne({ kartlar, onHazir }: Omit<Props, "aktif">) {
         uMerkez: { value: new THREE.Vector2(0.5, 0.5) },
         uZemin: { value: 0.3 },
         uGuc: { value: 0 },
+        uKaynak1: { value: new THREE.Vector2(0.4, 1.1) },
+        uKaynak2: { value: new THREE.Vector2(0.8, 1.1) },
+        uHedef: { value: new THREE.Vector2(0.7, 0.4) },
+        uNefes1: { value: 1 },
+        uNefes2: { value: 1 },
+        uParlama: { value: 0 },
       },
     });
     const m = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
@@ -392,7 +433,15 @@ function Sahne({ kartlar, onHazir }: Omit<Props, "aktif">) {
   }, [scene, zemin]);
 
   const gecici = useMemo(
-    () => ({ v: new THREE.Vector3(), hedefBak: new THREE.Vector3(), bak: new THREE.Vector3(0, 0, 0), baslangic: -1 }),
+    () => ({
+      v: new THREE.Vector3(),
+      hedefBak: new THREE.Vector3(),
+      bak: new THREE.Vector3(0, 0, 0),
+      baslangic: -1,
+      ondeki: -2,
+      parlama: 0,
+      azHareket: typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    }),
     [],
   );
 
@@ -407,6 +456,15 @@ function Sahne({ kartlar, onHazir }: Omit<Props, "aktif">) {
     const c = cozumle(s.deger, renkSayilari);
     const kam = camera as THREE.PerspectiveCamera;
 
+    // spot: ürün değişince kısa parlama (~0,6 sn), sürekli çok yavaş nefes (%16 değişim)
+    if (c.ondeki !== gecici.ondeki) {
+      if (gecici.ondeki !== -2 && !gecici.azHareket) gecici.parlama = 1;
+      gecici.ondeki = c.ondeki;
+    }
+    gecici.parlama *= Math.exp(-dt / 0.18);
+    const nefes1 = gecici.azHareket ? 0.92 : 0.92 + 0.08 * Math.sin((z * Math.PI * 2) / 7.6);
+    const nefes2 = gecici.azHareket ? 0.92 : 0.92 + 0.08 * Math.sin((z * Math.PI * 2) / 8.8 + 1.7);
+
     // yerleşim (CSS sahnesiyle ortak hesap): dünya birimine çevir
     const y = sahneYerlesimi(size.width, size.height);
     const gorH = 2 * UZAKLIK * Math.tan(THREE.MathUtils.degToRad(FOV / 2));
@@ -418,12 +476,13 @@ function Sahne({ kartlar, onHazir }: Omit<Props, "aktif">) {
     kok.scale.setScalar(olcek);
 
     // kamera süzülmesi (CSS sahnesindeki ölçek ve kaymayla aynı ritim)
+    // kamera ekran merkezine bakar (CSS katmanıyla aynı kadraj): ürün yerleşimdeki yerinde kalır
     kam.position.set(
       y.kameraX * birim + s.imlecX * 0.18,
-      zeminY + KUTU * olcek * 0.42 + y.kameraY * birim - s.imlecY * 0.1,
+      -y.kameraY * birim - s.imlecY * 0.1,
       UZAKLIK / y.yaklasma,
     );
-    gecici.hedefBak.set(y.kameraX * birim * 0.6, zeminY + KUTU * olcek * 0.42, 0);
+    gecici.hedefBak.set(y.kameraX * birim * 0.6, -y.kameraY * birim, 0);
     gecici.bak.lerp(gecici.hedefBak, 1 - Math.exp(-dt * 6));
     kam.lookAt(gecici.bak);
 
@@ -458,12 +517,16 @@ function Sahne({ kartlar, onHazir }: Omit<Props, "aktif">) {
       // dinlenmede yalnızca odaktaki ürün görünür; komşular yalnızca geçişte belirir
         const sonma = Math.min(1, Math.max(0, ad - (d < 0 ? 0.4 : 0.5)) / 0.45);
       const opak = Math.max(0, n.gorunur * (1 - sonma));
-      const parilti = ad < 0.5 ? ((c.donusler[i] / (Math.PI * 2)) % 1) * 2.6 - 0.8 : -2;
+      // yansıma bandı kaydırmayla ve dönüşle gezer
+      const bant = (((s.deger * 6 + c.donusler[i] / (Math.PI * 2)) % 1) + 1) % 1;
+      const parilti = ad < 0.6 ? bant * 2.6 - 0.8 : -2;
       for (const m of [n.mat, n.yansimaMat]) {
         m.uniforms.uParlaklik.value = parlak;
         m.uniforms.uOpaklik.value = opak;
       }
       n.mat.uniforms.uParilti.value = parilti;
+      n.mat.uniforms.uParlama.value = gecici.parlama * odakta;
+      n.mat.uniforms.uTexel.value = 1 / ((n.dokular[0]?.image as HTMLImageElement | undefined)?.width || 1024);
       n.grup.visible = opak > 0.002;
 
       const gIdx = Math.cos(donus) >= 0 ? sira : 1 % renkSayilari[i];
@@ -481,6 +544,17 @@ function Sahne({ kartlar, onHazir }: Omit<Props, "aktif">) {
     const zeminEkran = gecici.v.set(sahneX, zeminY, 0).project(kam);
     zm.uniforms.uZemin.value = zeminEkran.y * 0.5 + 0.5;
     zm.uniforms.uGuc.value = acilis;
+    // huzme kaynakları ekran üstünde, hedef ürünün ortası; kaydırmayla birkaç derece kayar
+    const hedef = gecici.v.set(sahneX, zeminY + KUTU * olcek * 0.32, 0).project(kam);
+    const hx = hedef.x * 0.5 + 0.5;
+    const hy = hedef.y * 0.5 + 0.5;
+    const kayma = Math.sin(s.deger * Math.PI * 2) * 0.03 + Math.sin(s.deger * Math.PI * 1.5) * 0.02;
+    zm.uniforms.uHedef.value.set(hx, hy);
+    zm.uniforms.uKaynak1.value.set(hx - (y.kutu / size.width) * 0.42 + kayma, 1.08);
+    zm.uniforms.uKaynak2.value.set(hx + (y.kutu / size.width) * 0.3 - kayma * 0.7, 1.08);
+    zm.uniforms.uNefes1.value = nefes1;
+    zm.uniforms.uNefes2.value = nefes2;
+    zm.uniforms.uParlama.value = gecici.parlama;
 
     const tm = toz.material as THREE.ShaderMaterial;
     tm.uniforms.uZaman.value = z;

@@ -11,7 +11,7 @@ import Ozet from "@/components/Ozet";
 import Ust from "@/components/Ust";
 import bayilerHam from "@/content/bayiler.json";
 import { acilis } from "@/content/site";
-import { urunler } from "@/content/urunler";
+import { ekUrunler, urunler } from "@/content/urunler";
 
 // Bayi sayıları kaynak listeden derleme anında hesaplanır.
 const bayiler = bayilerHam as Bayi[];
@@ -20,7 +20,7 @@ const kibrisVar = ilAdlari.includes("Kıbrıs");
 const ilSayisi = ilAdlari.filter((i) => i !== "Kıbrıs").length;
 
 const sahneUrunleri = acilis.sahne.map((id) => {
-  const u = urunler.find((x) => x.id === id);
+  const u = [...ekUrunler, ...urunler].find((x) => x.id === id);
   if (!u) throw new Error(`Açılış ürünü bulunamadı: ${id}`);
   return u;
 });

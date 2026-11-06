@@ -22,6 +22,13 @@ const yumusakAdim = (a: number, b: number, x: number) => {
 // kesit boyutu tarayıcı tarafından seçilir: dikey ekranda kutu 82vw, yatayda 66svh
 const KESIT_SIZES = "(max-aspect-ratio: 21/20) 82vw, 66svh";
 
+// Ürün yüzeyinde kaydırmayla gezen yansıma bandı: ürünün kendi saydamlığıyla maskelenir,
+// böylece yalnızca ürünün üstünde görünür (çevresinde dikdörtgen oluşmaz).
+function Bant({ g }: { g: Urun["gorseller"][number] }) {
+  const url = `url(${g.alfa.replace(".webp", "-768.webp")})`;
+  return <span className="sahne-bant" style={{ WebkitMaskImage: url, maskImage: url }} />;
+}
+
 function Kesit({ g, sinif, oncelik }: { g: Urun["gorseller"][number]; sinif?: string; oncelik?: boolean }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
@@ -73,6 +80,9 @@ export default function CssSahne({
 
     let kare = 0;
     let sonAnahtar = "";
+    let sonOndeki = -2;
+    const parlama = kok.querySelector<HTMLElement>(".sahne-parlama")!;
+    const azHareket = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const ciz = () => {
       kare = requestAnimationFrame(ciz);
       const s = sahneDurumu;
@@ -95,6 +105,28 @@ export default function CssSahne({
         kok.style.setProperty("--zy", `${y.zeminY}px`);
         kamera.style.perspectiveOrigin = `${y.merkezX}px ${y.zeminY - y.kutu * 0.45}px`;
         kamera.style.transformOrigin = `${y.merkezX}px ${y.zeminY - y.kutu * 0.4}px`;
+      }
+      // spot huzmeleri: kaynaklar üstte, ürünün ortasına yönelir; kaydırmayla açı birkaç derece kayar
+      const hedefX = y.merkezX;
+      const hedefY = y.zeminY - y.kutu * 0.32;
+      const kay = Math.sin(s.deger * Math.PI * 1.5) * 3.2; // derece
+      const huzme = (n: number, kx: number) => {
+        const sx = y.merkezX + kx * y.kutu + Math.sin(s.deger * Math.PI * 2) * y.kutu * 0.05;
+        const aci = (-Math.atan2(hedefX - sx, hedefY + h * 0.08) * 180) / Math.PI + kay * (n === 1 ? 1 : -0.7);
+        kok.style.setProperty(`--h${n}x`, `${sx.toFixed(1)}px`);
+        kok.style.setProperty(`--h${n}a`, `${aci.toFixed(2)}deg`);
+      };
+      huzme(1, -0.42);
+      huzme(2, 0.3);
+      // ürün değişince kısa parlama (yaklaşık 0,6 sn)
+      if (c.ondeki !== sonOndeki) {
+        if (sonOndeki !== -2 && !azHareket) {
+          parlama.animate([{ opacity: 0 }, { opacity: 1, offset: 0.3 }, { opacity: 0 }], {
+            duration: 650,
+            easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+          });
+        }
+        sonOndeki = c.ondeki;
       }
       kamera.style.transform = `translate3d(${(-y.kameraX - s.imlecX * 10).toFixed(1)}px, ${(y.kameraY - s.imlecY * 6).toFixed(1)}px, 0) scale(${y.yaklasma.toFixed(4)})`;
 
@@ -130,6 +162,9 @@ export default function CssSahne({
         el.style.setProperty("--gen", (gen * (0.45 + 0.55 * cs) + 0.12).toFixed(3));
         const on = String(sira);
         if (el.dataset.on !== on) el.dataset.on = on;
+        // yansıma bandı: kaydırmayla ve dönüşle ürünün üzerinde gezer
+        const bant = (((s.deger * 6 + c.donusler[i] / (Math.PI * 2)) % 1) + 1) % 1;
+        el.style.setProperty("--bant", `${(bant * 100).toFixed(1)}%`);
       }
     };
     kare = requestAnimationFrame(ciz);
@@ -142,6 +177,11 @@ export default function CssSahne({
   return (
     <div ref={kokRef} className="sahne-css" aria-hidden="true">
       <div className="sahne-isik" />
+      {/* spot ışıkları: iki yumuşak huzme, ürün arkasında sıcak hale, zeminde ışık havuzu */}
+      <div className="sahne-huzme sahne-huzme-1" />
+      <div className="sahne-huzme sahne-huzme-2" />
+      <div className="sahne-hale" />
+      <div className="sahne-havuz" />
       <div className="sahne-kamera">
         {urunler.slice(0, son + 1).map((u, i) => {
           const n = u.gorseller.length;
@@ -154,7 +194,8 @@ export default function CssSahne({
                 <div className="sahne-yuz">
                   {onlar.map((r) => (
                     <div key={r} className="sahne-renk" data-renk={r}>
-                      <Kesit g={u.gorseller[r]} oncelik={i === 0 && r === 0} />
+                      <Kesit g={u.gorseller[r]} sinif="sahne-ana" oncelik={i === 0 && r === 0} />
+                      <Bant g={u.gorseller[r]} />
                       <Kesit g={u.gorseller[r]} sinif="sahne-yansima" />
                     </div>
                   ))}
@@ -162,7 +203,8 @@ export default function CssSahne({
                 <div className="sahne-yuz sahne-arka">
                   {(tumu || i > 0) && (
                     <div className="sahne-renk">
-                      <Kesit g={arka} />
+                      <Kesit g={arka} sinif="sahne-ana" />
+                      <Bant g={arka} />
                       <Kesit g={arka} sinif="sahne-yansima" />
                     </div>
                   )}
@@ -172,6 +214,8 @@ export default function CssSahne({
           );
         })}
       </div>
+      {/* ürün değişince spotun yeni ürüne dönüşü: kısa parlama */}
+      <div className="sahne-parlama" />
       <div className="sahne-toz">
         {Array.from({ length: 12 }).map((_, i) => (
           <span key={i} style={{ ["--i" as string]: i }} />

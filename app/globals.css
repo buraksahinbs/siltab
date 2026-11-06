@@ -413,6 +413,96 @@ html.lenis body {
     linear-gradient(to bottom, transparent var(--zy), rgba(246, 242, 236, 0.022) var(--zy), rgba(246, 242, 236, 0) 100%),
     radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.35) 100%);
 }
+/* spot huzmeleri: sert kenarsız konik ışık (geçiş yalnızca ışık efekti için), yukarıdan ürüne */
+.sahne-huzme {
+  position: absolute;
+  top: -8%;
+  left: var(--h1x, var(--mx));
+  width: calc(var(--k) * 2.4);
+  height: calc(var(--zy) + 8% + var(--k) * 0.08);
+  transform-origin: 50% 0;
+  transform: translateX(-50%) rotate(var(--h1a, 0deg));
+  background: conic-gradient(
+    from 167deg at 50% 0%,
+    transparent 0deg,
+    rgba(246, 234, 216, 0.045) 8deg,
+    rgba(246, 234, 216, 0.075) 13deg,
+    rgba(246, 234, 216, 0.045) 18deg,
+    transparent 26deg,
+    transparent 360deg
+  );
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 30%, #000 82%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 30%, #000 82%, transparent 100%);
+  animation: huzme-nefes 7.6s ease-in-out infinite;
+  pointer-events: none;
+}
+.sahne-huzme-2 {
+  left: var(--h2x, var(--mx));
+  transform: translateX(-50%) rotate(var(--h2a, 0deg));
+  background: conic-gradient(
+    from 171deg at 50% 0%,
+    transparent 0deg,
+    rgba(232, 200, 160, 0.035) 6deg,
+    rgba(232, 200, 160, 0.055) 9deg,
+    rgba(232, 200, 160, 0.035) 12deg,
+    transparent 18deg,
+    transparent 360deg
+  );
+  animation-duration: 8.8s;
+  animation-delay: -3.1s;
+}
+/* ürün arkasında çok hafif sıcak hale */
+.sahne-hale {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    calc(var(--k) * 0.62) calc(var(--k) * 0.42) at var(--mx) calc(var(--zy) - var(--k) * 0.3),
+    rgba(214, 168, 118, 0.11),
+    rgba(214, 168, 118, 0.04) 55%,
+    transparent 75%
+  );
+  pointer-events: none;
+}
+/* zeminde ürünün altındaki ışık havuzu, huzmeyle birlikte nefes alır */
+.sahne-havuz {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    calc(var(--k) * 0.7) calc(var(--k) * 0.075) at var(--mx) calc(var(--zy) + var(--k) * 0.005),
+    rgba(246, 236, 222, 0.11),
+    transparent 75%
+  );
+  animation: huzme-nefes 7.6s ease-in-out infinite;
+  pointer-events: none;
+}
+/* spot yeni ürüne dönerken kısa parlama (JS ile oynatılır) */
+.sahne-parlama {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(calc(var(--k) * 0.55) calc(var(--k) * 0.45) at var(--mx) calc(var(--zy) - var(--k) * 0.3), rgba(255, 240, 220, 0.16), transparent 72%),
+    radial-gradient(calc(var(--k) * 0.75) calc(var(--k) * 0.08) at var(--mx) var(--zy), rgba(255, 240, 220, 0.14), transparent 72%);
+}
+/* nefes: yoğunluk en fazla yaklaşık %16 değişir, çok yavaş */
+@keyframes huzme-nefes {
+  0%,
+  100% {
+    opacity: 0.84;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sahne-huzme,
+  .sahne-havuz {
+    animation: none;
+    opacity: 0.92;
+  }
+}
 .sahne-kamera {
   position: absolute;
   inset: 0;
@@ -472,6 +562,32 @@ html.lenis body {
   opacity: var(--opak, 1);
   filter: brightness(var(--parlak, 1));
   user-select: none;
+}
+/* kenar ışığı: siyah ürünler koyu zeminde kaybolmasın. drop-shadow ürünün saydamlığını izler,
+   yukarı kaydırılmış sıcak gölge yalnızca üst kenarlarda ince bir ışık çizgisi olarak görünür */
+.sahne-renk img.sahne-ana {
+  filter: brightness(var(--parlak, 1)) drop-shadow(0 -1.5px 0.6px rgba(255, 238, 214, 0.42))
+    drop-shadow(0 0 12px rgba(255, 226, 192, 0.1));
+}
+/* yansıma bandı: ürün saydamlığıyla maskelenmiş, kaydırmayla gezen sıcak ışık */
+.sahne-bant {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    102deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(255, 244, 228, 0.32) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  background-size: 320% 100%;
+  background-position: var(--bant, 0%) 0;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  mix-blend-mode: screen;
+  opacity: var(--opak, 1);
 }
 /* ince yansıma: ürünün tabanından aşağı doğru hızla sönen ayna görüntüsü */
 .sahne-renk img.sahne-yansima {

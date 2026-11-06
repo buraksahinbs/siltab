@@ -126,3 +126,19 @@ Açılış sahnesinde ürünün üzerine spot ışıkları vuruyormuş gibi hafi
 
 ## Lighthouse sonucu (2026-11-06, ölçüm notu `docs/ILERLEME.md`)
 Mobil performans 73 ile 76 (hedef 80, henüz altında), masaüstü 99. Erişilebilirlik, iyi uygulamalar ve SEO 100. Raporlar: `docs/lighthouse/`.
+
+## Açılış düzeni ve ışık düzeltmesi (Burak'ın ekran görüntülü geri bildirimi, bağlayıcı)
+
+1. Açılışta üst kısım (header) ile başlık metni arasında çok fazla boş alan var (1440x900'de başlık ekranın alt yarısında, üstte büyük boşluk). Gereksiz. Metin bloğunu ve ürünü dikeyde yukarı al: eyebrow, başlık, açıklama ve butonlar ilk ekranda (fold) tamamen görünsün, header ile eyebrow arası yaklaşık 80 ile 120 px olsun. Ürün de aynı dikey düzlemde, başlıkla hizalı ve ekranın içinde tam görünsün (şu an alt kenardan kesiliyor). 1440x900, 1366x768 ve 390x844'te kontrol et.
+2. Spot ışığı ürünün KENDİSİNİ etkilemesin. Ürünün yüzeyinde parlama, yoğunluk değişimi, hareketli yansıma bandı, tone/parlaklık animasyonu YOK. Önceki "yüzeyde gezen yansıma bandı" ve "ürün değişince parlama" maddeleri iptal. Ürün görseli sabit ve doğal kalır (parlaklık, kontrast, renk animasyonu yok, shader'da ürün rengine ışık eklenmez).
+   Işık sadece ARKA PLANDA olsun: huzme ürünün arkasında ve zeminde, ürünün üstüne bindirilmeden (ürün katmanı huzmenin üstünde dursun, huzme mix-blend ile ürüne işlemesin). Huzme çok hafif, yavaş ve düşük yoğunlukta nefes alsın. Mevcut hali bile biraz güçlü, yoğunluğunu yaklaşık yarıya indir.
+3. Doğrulama: ürünün piksellerinin ışık animasyonu sırasında değişmediğini ölç (ürün bölgesinin iki farklı anda piksel farkı sıfıra yakın olmalı).
+
+## Açılış sahnesi ürün sayısı kararı (Burak'ın son talebi, bağlayıcı)
+
+Üstteki pinli, dönen ürün sahnesinde SADECE İLK 3 ÜRÜN olsun: (1) erkek rugan ayakkabı, ardından sıradaki iki ürün (kadın topuklu ve bir diğeri, mevcut sıradaki 2. ve 3. ürün; çanta veya bot olabilir, görsel olarak en güçlü ve en temiz kesitli iki ürünü seç, kategori çeşitliliği tercih et). Kalan ürünleri sahneden çıkar.
+- Pin süresi kısalsın: 3 ürün için toplam kaydırma yolu yaklaşık 3 ekran yüksekliği (şu an çok uzun, ziyaretçi kaydır kaydır sıkılıyor). Sahne bittiğinde sayfa hemen sonraki bölüme (markalar) aksın.
+- Sayaç ve kategori göstergesi 3 ürüne göre güncellensin (01 / 03 gibi).
+- Her ürün için dönme animasyonu korunur, geçişler akıcı kalsın.
+- Çıkarılan ürünlerin hepsi Koleksiyon bölümünde zaten var, orada kalmaya devam eder (oraya dokunma).
+- CSS yedek katman ve WebGL katmanı aynı 3 ürünü kullansın. Lighthouse etkisine bak: daha az texture, mobil performansı iyileştirmeli.

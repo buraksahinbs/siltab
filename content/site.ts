@@ -37,6 +37,7 @@ export const gezinme = [
 ] as const;
 
 export const kategoriAdlari: Record<KategoriKimligi, string> = {
+  "erkek-klasik": "Erkek / Klasik",
   okceli: "Okçeli",
   bot: "Bot",
   canta: "Çanta",
@@ -56,7 +57,8 @@ export const acilis = {
     "2001'de ayakkabı tabanı tasarlamak ve üretmek için kuruldu. 2004'ten bu yana ayakkabı da üretiyor. Pierre Cardin Erkek Ayakkabı'nın Türkiye alt lisansörü.",
   kaydir: "Kaydırın",
   // Açılış sahnesinde sırayla gösterilen ürünler (content/urunler.ts kimlikleri)
-  sahne: ["okceli-s09", "bot-s03", "canta-b-s26", "deri-s14", "babet-s01"],
+  // İlk ürün erkek rugan (BRIEF, Ürün sırası kararı), ardından katalogdan kadın ürünleri
+  sahne: ["erkek-rugan", "okceli-s09", "bot-s03", "canta-b-s26", "deri-s14", "babet-s01"],
 };
 
 export const koleksiyon = {

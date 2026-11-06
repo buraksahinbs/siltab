@@ -2,7 +2,10 @@
 // Görseller etiket ve fiyat metninden temizlenmiştir. Ürün adı, marka ve fiyat bilgisi yoktur.
 // Aynı ürünün görselleri katalogdaki renk seçenekleridir.
 
-export type KategoriKimligi = "babet" | "bot" | "canta" | "comfort" | "deri" | "okceli" | "spor";
+export type KategoriKimligi =
+  | "babet" | "bot" | "canta" | "comfort" | "deri" | "okceli" | "spor"
+  /** yalnızca açılış sahnesi (katalog dışı) */
+  | "erkek-klasik";
 
 export type UrunGorseli = {
   buyuk: string;
@@ -19,6 +22,7 @@ export type UrunGorseli = {
 
 export type Urun = { id: string; kategori: KategoriKimligi; gorseller: UrunGorseli[] };
 
+/** Katalogdan seçilen ürünler (koleksiyon şeridi ve açılış). */
 export const urunler: Urun[] = [
   {
     "id": "babet-s01",
@@ -641,6 +645,25 @@ export const urunler: Urun[] = [
         "alfaKucuk": "/urun-alfa/spor/spor-s07-3-512.webp",
         "genislik": 0.9004,
         "yukseklik": 0.4854
+      }
+    ]
+  }
+];
+
+/** Katalog dışı, yalnızca açılış sahnesinde kullanılan ürünler. */
+export const ekUrunler: Urun[] = [
+  {
+    "id": "erkek-rugan",
+    "kategori": "erkek-klasik",
+    "gorseller": [
+      {
+        "buyuk": "/urun-alfa/erkek-rugan/erkek-rugan-kare.webp",
+        "kucuk": "/urun-alfa/erkek-rugan/erkek-rugan-kare-768.webp",
+        "renk": "#39393d",
+        "alfa": "/urun-alfa/erkek-rugan/erkek-rugan-kare.webp",
+        "alfaKucuk": "/urun-alfa/erkek-rugan/erkek-rugan-kare-512.webp",
+        "genislik": 0.9004,
+        "yukseklik": 0.3535
       }
     ]
   }
